@@ -58,6 +58,7 @@ def periodic_run(D, M, status):
 				print("Update finished!")
 				status.append(D.get_device_status())
 				D.send_message("Rebooting")
+				D.send_device_status(status)
 				D.restart()
 		else:
 			D.send_exception("Manifest incorrect")
@@ -65,9 +66,8 @@ def periodic_run(D, M, status):
 	else:
 		D.send_exception("Could not get manifest")
 		print("Could not get manifest from Konker")
-		
-	D.send_device_status(status)
 
+	# D.send_device_status(status)
 	# for debugging
 # 	if num < 3:
 # 		t = Timer(10, periodic_run, [D,M])

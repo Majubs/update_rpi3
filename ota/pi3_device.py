@@ -339,7 +339,7 @@ class Device:
 		for s in status_list:
 			data = json.dumps(s)
 			try:
-				requests.post('http://data.demo.konkerlabs.net/pub/' + self.user + '/_update', auth=(self.user, self.passwd), data=data)
+				requests.post('http://data.demo.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 			except:
 				print("[DEV] Status not sent")
 			print("[DEV] Sending: ", s)
