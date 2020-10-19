@@ -146,7 +146,7 @@ class Device:
 		print("[DEV] Retrieving FIRMWARE from Konker")
 		#get manifest from addr
 		try:
-			r = requests.get('https://data.demo.konkerlabs.net/firmware/' + self.user + '/binary', auth=(self.user, self.passwd))
+			r = requests.get('https://data.prod.konkerlabs.net/firmware/' + self.user + '/binary', auth=(self.user, self.passwd))
 		except:
 			return ''
 		print("[DEV] Status: ", r.status_code, r.reason)
@@ -237,8 +237,9 @@ class Device:
 		r = subprocess.run(command, stdout=subprocess.PIPE)
 # 		print("Result:", r)
 		
+		separator = '\\r\\n' if platform.system().lower()=='windows' else '\\n'
 		if r.returncode == 0:
-			r_str = str(r.stdout).split('\\n')
+			r_str = str(r.stdout).split(separator)
 			print(r_str)
 			ret_ping = float(r_str[-2].split('/')[4])
 	# 		r_str = r_str.split('\\')
@@ -320,7 +321,7 @@ class Device:
 	def send_message(self, msg):
 		data = json.dumps({"update stage":msg})
 		try:
-			requests.post('http://data.demo.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 		except:
 			print("[DEV] Message not sent")
 		print("[DEV] Sending: ", msg)
@@ -328,7 +329,7 @@ class Device:
 	def send_exception(self, exception):
 		data = json.dumps({"update exception":exception})
 		try:
-			requests.post('http://data.demo.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 		except:
 			print("[DEV] Message not sent")
 		print("[DEV] Exception: ", exception)
@@ -339,7 +340,7 @@ class Device:
 		for s in status_list:
 			data = json.dumps(s)
 			try:
-				requests.post('http://data.demo.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 			except:
 				print("[DEV] Status not sent")
 			print("[DEV] Sending: ", s)

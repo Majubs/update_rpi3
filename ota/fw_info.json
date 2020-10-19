@@ -1,1 +1,1 @@
-{"version":"1.0.1", "sequence_number":"3796729686678", "size":"4000", "device":"node02", "expiration_date":"31/12/2020", "author":"majubs", "digital_signature":"", "key_claims":"encryptionkeylocation", "checksum":"97b97aec2e3027191ac383266da4fb4f"}
+{"version": "1.0.3", "sequence_number": "37972777435679", "size": "4000", "device": "node02", "expiration_date": null, "author": null, "digital_signature": "1234567890alongstringhgeresignature0", "key_claims": "something", "checksum": "f4f749c1fb3595b6ea32cc5d54ea0c54", "backup": "fw_1.0.1.zip"}

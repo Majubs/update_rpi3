@@ -8,8 +8,6 @@ Created on Mon Apr 13 14:28:43 2020
 import requests, hashlib
 # from time import sleep
 
-num = 0
-
 class Manifest:
 	errors_msg = [
 		"Older version",
@@ -44,24 +42,29 @@ class Manifest:
 	def get_manifest(self):
 		print("Retrieving manifest from Konker Platform")
 		try:
-			r = requests.get('http://data.demo.konkerlabs.net/sub/' + self.user + '/_update', auth=(self.user, self.passwd))
+			r = requests.get('http://data.prod.konkerlabs.net/sub/' + self.user + '/_update', auth=(self.user, self.passwd))
 		except:
-			return False
+			return 0
 		#get manifest from addr
 		print("Status: ", r.status_code, r.reason)
 		
 		if r.status_code == 200:
 			# empty list means there is no manifest
 			if r.json() == []:
-				return False
-			self.m_json = r.json()[0]['data']
+				return 2
+			json_temp = r.json()[0]['data']
+
+			if ("update stage" in json_temp) or ("update exception" in json_temp):
+				return 2
+
+			self.m_json = json_temp
 			#r = r.text.replace("\'", "\"")
 			#self.m_json = json.loads(r)
 # 			print(json.dumps(self.m_json, indent=4))
 			
-			return True
+			return 1
 		
-		return False
+		return 0
 	
 	def parse_manifest(self, device):
 		print("Parsing and validating manifest")
@@ -109,6 +112,7 @@ class Manifest:
 					check_errs.append(False)
 					self.m_parsed[field] = self.m_json.get(field)
 			else:
+				check_errs.append(False)
 				print("Optional element NOT in manifest: ", field)
 		
 		# check if any error occured
@@ -119,7 +123,7 @@ class Manifest:
 			self.valid = False
 			self._print_errors(check_errs)
 	
-	def apply_manifest(self, device):
+	def apply_manifest(self, device, status):
 		print("Applying manifest!")
 		#update FW
 		print(self.m_parsed)
@@ -128,6 +132,8 @@ class Manifest:
 			device.send_exception("Firmware not found")
 			print("Did not receive firmware")
 			return False
+		else:
+			device.send_message("Firmware received correctly")
 # 		else:
 # 			try:
 # 				open('temp_fw.zip', 'wb').write(new_fw)
@@ -138,7 +144,7 @@ class Manifest:
 		md5sum = hashlib.md5(bytes(new_fw)).hexdigest()
 		print("Received file checksum >>> ", md5sum)
 		if device.check_checksum(self.m_parsed['checksum'], md5sum):
-			device.send_message("Firmware received correctly. Checksum OK")
+			device.send_message("Checksum OK")
 			print("Checksum correct!")
 		else:
 			device.send_exception("Checksum did not match")
@@ -151,14 +157,16 @@ class Manifest:
 # 			p_steps = self.m_parsed['processing_steps'][0]
 # 			if p_steps.get('decode_algorithm'):
 # 				new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), p_steps['decode_algorithm'])
-			new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), 'zip')
-		
-		if 'additional_steps' in self.m_parsed:
-			print("Doing addtional steps: ", self.m_parsed['additional_steps'][0])
+		new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), 'zip')
 		
 		#substitute fw
 		print("Applying new firmware")
+		status.append(device.get_device_status())
 		device.apply_firmware(new_fw_fname, (self.m_json.get("version"), self.m_json.get("sequence_number"), self.m_json.get("size"), self.m_json.get("expiration_date"), self.m_json.get("author"), self.m_json.get("digital_signature"), self.m_json.get("key_claims"), self.m_json.get("checksum")))
+
+		if 'additional_steps' in self.m_parsed:
+			print("Doing addtional steps: ", self.m_parsed['additional_steps'][0])
+
 # 		try:
 # 			os.remove('temp_fw.zip')
 # 		except:

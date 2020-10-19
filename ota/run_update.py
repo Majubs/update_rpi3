@@ -33,7 +33,7 @@ def periodic_run(D, M, status):
 		print("Starting a new FW")
 		if D.check_start():
 			print("New version: ", D.version)
-			status.append(D.get_device_status())
+			D.send_device_status([D.get_device_status()])
 			D.send_message("Update correct")
 		else:
 			print("New FW did not start correctly")
@@ -43,7 +43,9 @@ def periodic_run(D, M, status):
 	else:
 		print("Starting OTA process")
 	
-	if M.get_manifest():
+	status.append(D.get_device_status())
+	ret = M.get_manifest()
+	if ret == 1:
 		# each time a update arrives, get network information
 		net_info = D.get_network_info()
 		D.send_message(net_info)
@@ -54,18 +56,20 @@ def periodic_run(D, M, status):
 # 			sleep(2)
 			status.append(D.get_device_status())
 			D.send_message("Manifest correct")
-			if M.apply_manifest(D):
+			if M.apply_manifest(D, status):
 				print("Update finished!")
 				status.append(D.get_device_status())
-				D.send_message("Rebooting")
+				D.send_message("Update done")
 				D.send_device_status(status)
 				D.restart()
 		else:
 			D.send_exception("Manifest incorrect")
 			print("Manifest format is incorrect")
-	else:
+	elif ret == 0:
 		D.send_exception("Could not get manifest")
 		print("Could not get manifest from Konker")
+	else:
+		print("No manifest available")
 
 	# D.send_device_status(status)
 	# for debugging

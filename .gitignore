@@ -1,4 +1,5 @@
 ota/config.json
+ota/**.zip
 create_update/token.txt
 
 # Byte-compiled / optimized / DLL files
