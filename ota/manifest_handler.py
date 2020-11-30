@@ -5,7 +5,7 @@ Created on Mon Apr 13 14:28:43 2020
 
 @author: majubs
 """
-import requests, hashlib
+import requests, hashlib, logging
 # from time import sleep
 
 class Manifest:
@@ -34,19 +34,19 @@ class Manifest:
 		self.passwd = passwd
 		
 	def _print_errors(self, err_filter):
-		print("Errors parsing manifest:", err_filter)
+		# print("Errors parsing manifest:", err_filter)
 		errs = [e for (e, i) in zip(self.errors_msg, err_filter) if i]
 		for e in errs:
-			print("[ERRROR]", e)
+			logging.debug("[ERRROR] %s", e)
 	
 	def get_manifest(self):
-		print("Retrieving manifest from Konker Platform")
+		logging.debug("Retrieving manifest from Konker Platform")
 		try:
 			r = requests.get('http://data.prod.konkerlabs.net/sub/' + self.user + '/_update', auth=(self.user, self.passwd))
 		except:
 			return 0
 		#get manifest from addr
-		print("Status: ", r.status_code, r.reason)
+		logging.debug("Status: %d %s", r.status_code, r.reason)
 		
 		if r.status_code == 200:
 			# empty list means there is no manifest
@@ -67,14 +67,15 @@ class Manifest:
 		return 0
 	
 	def parse_manifest(self, device):
-		print("Parsing and validating manifest")
+		logging.debug("Parsing and validating manifest")
+		self.valid = True
 		
 		# check_errs will de used as a filter for error messages, a True element means error ocurred
 		# device.check_* functions return True if check is OK
 		# so check_errs elements receive the negated result of device.check_* funtions
 		check_errs =  []
 		for field in self.required_elements:
-			print("Check for required element ", field)
+			logging.debug("Check for required element %s", field)
 			if field in self.m_json and self.m_json.get(field) != None:
 				if field == "version":
 					check_errs.append(not device.check_version(self.m_json.get(field)))
@@ -88,13 +89,13 @@ class Manifest:
 					check_errs.append(False)
 					self.m_parsed[field] = self.m_json.get(field)
 			else:
-				print("Required element missing from manifest: ", field)
+				logging.debug("Required element missing from manifest: %s", field)
 				check_errs.append(True)
 # 				self.valid = False
 			
 # 		print(">>> Required elements: ", self.valid)
 		for field in self.optional_elements:
-			print("Checking for optional element ", field)
+			logging.debug("Checking for optional element %s", field)
 			if field in self.m_json and self.m_json.get(field) != None:
 				if field == "vendor_id":
 					check_errs.append(not device.check_vendor(self.m_json.get(field)))
@@ -113,7 +114,7 @@ class Manifest:
 					self.m_parsed[field] = self.m_json.get(field)
 			else:
 				check_errs.append(False)
-				print("Optional element NOT in manifest: ", field)
+				logging.debug("Optional element NOT in manifest: %s", field)
 		
 		# check if any error occured
 		incorrect = False
@@ -124,13 +125,13 @@ class Manifest:
 			self._print_errors(check_errs)
 	
 	def apply_manifest(self, device, status):
-		print("Applying manifest!")
+		logging.debug("Applying manifest!")
 		#update FW
-		print(self.m_parsed)
+		# print(self.m_parsed)
 		new_fw = device.download_firmware()
 		if new_fw == '':
 			device.send_exception("Firmware not found")
-			print("Did not receive firmware")
+			logging.debug("Did not receive firmware")
 			return False
 		else:
 			device.send_message("Firmware received correctly")
@@ -142,34 +143,37 @@ class Manifest:
 # 				return False
 		
 		md5sum = hashlib.md5(bytes(new_fw)).hexdigest()
-		print("Received file checksum >>> ", md5sum)
+		logging.debug("Received file checksum >>> ", md5sum)
 		if device.check_checksum(self.m_parsed['checksum'], md5sum):
 			device.send_message("Checksum OK")
-			print("Checksum correct!")
+			logging.debug("Checksum correct!")
 		else:
 			device.send_exception("Checksum did not match")
-			print("Checksum incorrect!")
+			logging.debug("Checksum incorrect!")
 			return False
 		
-		#do post update stuff (if needed)
+		#do processing stuff (if needed)
+		alg = 'zip'
 		if 'processing_steps' in self.m_parsed:
-			print("Doing processing steps: ", self.m_parsed['processing_steps'][0])
-# 			p_steps = self.m_parsed['processing_steps'][0]
-# 			if p_steps.get('decode_algorithm'):
-# 				new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), p_steps['decode_algorithm'])
-		new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), 'zip')
+			logging.debug("Doing processing steps: ", self.m_parsed['processing_steps'][0])
+			p_steps = self.m_parsed['processing_steps'][0]
+			if p_steps.get('decode_algorithm'):
+				alg = p_steps['decode_algorithm']
+
+			if p_steps.get('run'):
+				if not device.run_cmd_install(p_steps['run']):
+					return False
+
+		#write new FW to device					
+		new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), alg)
 		
-		#substitute fw
-		print("Applying new firmware")
+		#substitute olf FW with new
+		logging.debug("Applying new firmware")
 		status.append(device.get_device_status())
 		device.apply_firmware(new_fw_fname, (self.m_json.get("version"), self.m_json.get("sequence_number"), self.m_json.get("size"), self.m_json.get("expiration_date"), self.m_json.get("author"), self.m_json.get("digital_signature"), self.m_json.get("key_claims"), self.m_json.get("checksum")))
 
+		# after update (if needed)
 		if 'additional_steps' in self.m_parsed:
-			print("Doing addtional steps: ", self.m_parsed['additional_steps'][0])
+			logging.debug("Doing addtional steps: ", self.m_parsed['additional_steps'][0])
 
-# 		try:
-# 			os.remove('temp_fw.zip')
-# 		except:
-# 			return False
-		
 		return True

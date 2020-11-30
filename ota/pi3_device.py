@@ -5,7 +5,7 @@ Created on Thu Apr 30 18:50:59 2020
 
 @author: majubs
 """
-import json, requests, os, platform, subprocess, psutil
+import json, requests, os, platform, subprocess, psutil, socket, logging
 from zipfile import ZipFile
 from time import time
 
@@ -25,7 +25,7 @@ class Device:
 			if content.get("device"):
 				self.device = content["device"]
 			else:
-				self.device = 'node00'
+				self.device = socket.gethostname()
 			if content.get("sequence_number"):
 				self.sequence_number = content["sequence_number"]
 			else:
@@ -56,7 +56,7 @@ class Device:
 		try:
 			zip_obj = ZipFile(out_file, 'w')
 		
-			print("[DEV] Backing up current FW, version ", self.version)
+			logging.debug("[DEV] Backing up current FW, version ", self.version)
 			
 			os.chdir('../')
 			for d in self.directory_list:
@@ -69,7 +69,7 @@ class Device:
 			zip_obj.write(self.fw_info_file)
 			zip_obj.close()
 		except:
-			print("[DEV] It was not possible to create a backup")
+			logging.debug("[DEV] It was not possible to create a backup")
 		
 # 		os.rename(out_file, 'ota/' + out_file)
 		self.backup_file = out_file
@@ -88,14 +88,17 @@ class Device:
 		content["key_claims"] = new_info[6]
 		content["checksum"] = new_info[7]
 		content["backup"] = self.backup_file
-		
+
 		with open(self.fw_info_file, 'w') as f:
 			f.write(json.dumps(content))
+
+		self.version = new_info[0]
+		self.sequence_number = new_info[1]
 			
 	# Return True if ver1 > ver2, False otherwise
 	def _compare_versions(self, ver1, ver2):
-		print('Version NEW: '+ str(ver1))
-		print('Version OLD: '+ str(ver2))
+		# print('Version NEW: '+ str(ver1))
+		# print('Version OLD: '+ str(ver2))
 		v1 = ver1.split('.')
 		v2 = ver2.split('.')
 		if v1[0] > v2[0]:
@@ -143,22 +146,22 @@ class Device:
 		return False
 	
 	def download_firmware(self):
-		print("[DEV] Retrieving FIRMWARE from Konker")
+		logging.debug("[DEV] Retrieving FIRMWARE from Konker")
 		#get manifest from addr
 		try:
 			r = requests.get('https://data.prod.konkerlabs.net/firmware/' + self.user + '/binary', auth=(self.user, self.passwd))
 		except:
 			return ''
-		print("[DEV] Status: ", r.status_code, r.reason)
+		logging.debug("[DEV] Status: ", r.status_code, r.reason)
 		
 		if r.status_code == 200:
 			# if it's a FW, the Content-type is application/octet-stream
 			if r.headers['Content-type'].split(';')[0] == 'application/json':
 				return ''
 			new_fw = r.content
-			print("=======================================================")
-			print(bytes(new_fw))
-			print("=======================================================")
+			# print("=======================================================")
+			# print(bytes(new_fw))
+			# print("=======================================================")
 			
 			return new_fw
 		
@@ -170,7 +173,7 @@ class Device:
 	#backup old FW and extract new one
 	def apply_firmware(self, new_fw, fw_info, steps=None):
 		if steps:
-			print("-> ", steps)
+			logging.debug("-> ", steps)
 			
 		self._backup_fw()
 		
@@ -183,7 +186,16 @@ class Device:
 			zip_obj.extractall('../app/', zip_list)
 		
 		self._update_fw_info(fw_info)
-		
+
+	def run_cmd_install(self, cmd):
+		if cmd:
+			return_code = subprocess.run(cmd.split(), cwd="../app/")
+
+			if return_code == 0:
+				return True
+
+		return False
+
 	# write the new fw to flash
 	def write_file(self, fw, version, alg):
 		file_name = "fw_" + version + "." + alg
@@ -212,13 +224,13 @@ class Device:
 				zip_obj.extractall(os.getcwd(), zip_list)
 				
 			os.chdir('ota')
-			print("[DEV] Rollback done")
+			logging.debug("[DEV] Rollback done")
 		else:
-			print("[DEV] Backup does not exists!")
+			logging.debug("[DEV] Backup does not exists!")
 		
 	# restart FW
 	def restart(self):
-		print("[DEV] Reestarting FW")
+		logging.debug("[DEV] Reestarting FW")
 		#subprocess.call('sudo supervisorctl restart gateway_update', shell=True)
 		# create file to indicate the first start of a new FW
 		with open(self.start_file, 'w') as f:
@@ -240,7 +252,7 @@ class Device:
 		separator = '\\r\\n' if platform.system().lower()=='windows' else '\\n'
 		if r.returncode == 0:
 			r_str = str(r.stdout).split(separator)
-			print(r_str)
+			# print(r_str)
 			ret_ping = float(r_str[-2].split('/')[4])
 	# 		r_str = r_str.split('\\')
 	# 		print('>>> ', r_str[-2])
@@ -272,10 +284,10 @@ class Device:
 	# return a dict with ping and nmap info
 	def get_network_info(self):
 		ping = self.ping_platform()
-		print("[DEV] Ping is {} ms".format(ping))
+		logging.debug("[DEV] Ping is {} ms".format(ping))
 		
 		quality, strength = self.get_signal_strength()
-		print("[DEV] Signal information {}/70 | {} dBm".format(quality, strength))
+		logging.debug("[DEV] Signal information {}/70 | {} dBm".format(quality, strength))
 
 		# TODO get this info
 		nmap = {}
@@ -303,7 +315,7 @@ class Device:
 				l = p.split()
 				if l and len(l) == 5:
 					top_procs.append({"pid":l[0], "comm":l[1], "time":l[2], "mem":l[3], "cpu":l[4]})
-		print("Top processes: \n", top_procs)
+		# print("Top processes: \n", top_procs)
 			
 		return top_procs
 	
@@ -332,7 +344,7 @@ class Device:
 		status = {"cpu": cpu, "mem":mem, "temp":temp, "ts_diff":current_milli_time-self.last_milli_time, "ps":top_procs}
 		self.last_milli_time = current_milli_time
 		
-		print(status)
+		# print(status)
 		
 		return status
 		
@@ -346,26 +358,26 @@ class Device:
 		try:
 			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 		except:
-			print("[DEV] Message not sent")
-		print("[DEV] Sending: ", msg)
+			logging.debug("[DEV] Message not sent")
+		logging.debug("[DEV] Sending: %s", msg)
 		
 	def send_exception(self, exception):
 		data = json.dumps({"update exception":exception})
 		try:
 			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 		except:
-			print("[DEV] Message not sent")
-		print("[DEV] Exception: ", exception)
+			logging.debug("[DEV] Message not sent")
+		logging.debug("[DEV] Exception: %s", exception)
 		
 	def send_device_status(self, status_list):
-		print("[DEV] Sending status colllected during execution")
+		logging.debug("[DEV] Sending status colllected during execution")
 		
 		for s in status_list:
 			data = json.dumps(s)
 			try:
 				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 			except:
-				print("[DEV] Status not sent")
-			print("[DEV] Sending: ", s)
+				logging.debug("[DEV] Status not sent")
+			# print("[DEV] Sending: ", s)
 			
-		print("[DEV] Done sending")
+		logging.debug("[DEV] Done sending")
