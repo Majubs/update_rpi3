@@ -249,15 +249,38 @@ class Device:
 		
 		return ret_ping
 	
+	def get_signal_strength(self):
+		command = "iwconfig wlan0".split()
+		quality = 0
+		strength = 0
+
+		r = subprocess.run(command, stdout=subprocess.PIPE)
+
+		if r.returncode == 0:
+			o = str(r.stdout)
+			idx_start = o.find("Link")
+			if idx_start >= 0:
+				idx_end = o[idx_start:].find("\\n")
+				l = o[idx_start:idx_end]
+				q = l.split()[1]
+				s = l.split()[4]
+				quality = q.split('=')[1].split('/')[0]
+				strength = s.split('=')[1]
+
+		return quality, strength
+
 	# return a dict with ping and nmap info
 	def get_network_info(self):
 		ping = self.ping_platform()
 		print("[DEV] Ping is {} ms".format(ping))
 		
+		quality, strength = self.get_signal_strength()
+		print("[DEV] Signal information {}/70 | {} dBm".format(quality, strength))
+
 		# TODO get this info
 		nmap = {}
 		
-		info = {"ping":ping, "nmap":nmap}
+		info = {"ping":ping, "signal_quality":quality, "signal_strength":strength} #"nmap":nmap}
 		
 		return info
 	
