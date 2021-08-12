@@ -29,16 +29,32 @@ class Device:
 			if content.get("sequence_number"):
 				self.sequence_number = content["sequence_number"]
 			else:
-				self.sequence_number = '9999999999999'
+				self.sequence_number = '0'
 			if content.get("backup"):
 				self.backup_file = content["backup"]
 			else:
-				self.backup_file = "fw.zip"
+				self.backup_file = None
 		except:
 			self.version = '0.0.0'
-			self.device = 'node00'
-			self.sequence_number = '9999999999999'
-			self.backup_file = "fw.zip"
+			self.device = socket.gethostname()
+			self.sequence_number = '0'
+			self.backup_file = None
+
+			content = dict()
+			content["version"] = self.version
+			content["device"] = self.device
+			content["sequence_number"] = self.sequence_number
+			content["size"] = None
+			content["expiration_date"] = None
+			content["author"] = "Konker"
+			content["digital_signature"] = None
+			content["key_claims"] = None
+			content["checksum"] = None
+			content["backup"] = self.backup_file
+
+			with open(fw_info_file, 'w') as f:
+				f.write(json.dumps(content))
+
 # 		self.directory_list = ['conf', 'rtd-LoRa', 'master'] #, 'ota']
 		self.directory_list = ['app']
 		self.fw_info_file = fw_info_file
@@ -46,7 +62,12 @@ class Device:
 		self.user = user
 		self.passwd = passwd
 		self.last_milli_time = round(time() * 1000)
-		
+
+		if not os.path.exists('../app'):
+			os.makedirs('../app')
+			logging.log("Creating app folder")
+
+
 	#backup current FW in zip format
 	def _backup_fw(self, dirs=''):
 		if dirs:
@@ -87,14 +108,15 @@ class Device:
 		content["digital_signature"] = new_info[5]
 		content["key_claims"] = new_info[6]
 		content["checksum"] = new_info[7]
-		content["backup"] = self.backup_file
+		content["backup"] = "fw_" + self.version + ".zip"
 
 		with open(self.fw_info_file, 'w') as f:
 			f.write(json.dumps(content))
 
-		self.version = new_info[0]
-		self.sequence_number = new_info[1]
-			
+		self.backup_file = content["backup"]
+		self.version = content["version"]
+		self.sequence_number = content["sequence_number"]
+
 	# Return True if ver1 > ver2, False otherwise
 	def _compare_versions(self, ver1, ver2):
 		# print('Version NEW: '+ str(ver1))
@@ -115,7 +137,11 @@ class Device:
 		return True
 	
 	def check_device(self, device_type):
-		return self.device == device_type
+		flag = self.device == device_type
+		if not flag:
+			self.send_exception("Update for different device")
+
+		return flag
 	
 	def check_memory(self, fw_size):
 		return True
@@ -129,7 +155,11 @@ class Device:
 		return True
 	
 	def check_sequence_number(self, seq_number):
-		return int(self.sequence_number) < int(seq_number)
+		flag = int(self.sequence_number) < int(seq_number)
+		if not flag:
+			self.send_exception("Older sequence number")
+		
+		return flag
 	
 	def check_signature(self, signature, key_claims):
 		return True
@@ -138,7 +168,11 @@ class Device:
 		return True
 	
 	def check_version(self, new_version):
-		return self._compare_versions(new_version, self.version)
+		flag = self._compare_versions(new_version, self.version)
+		if not flag:
+			self.send_exception("Older version")
+
+		return flag
 	
 	def check_version_list(self, req_version_list):
 		if self.version in req_version_list:
@@ -175,7 +209,7 @@ class Device:
 		if steps:
 			logging.debug("-> ", steps)
 			
-		self._backup_fw()
+		# self._backup_fw()
 		
 		#decompress new FW
 		with ZipFile(new_fw, 'r') as zip_obj:
@@ -189,9 +223,9 @@ class Device:
 
 	def run_cmd_install(self, cmd):
 		if cmd:
-			return_code = subprocess.run(cmd.split(), cwd="../app/")
+			r = subprocess.run(cmd.split(), cwd="../app/")
 
-			if return_code == 0:
+			if r.returncode == 0:
 				return True
 
 		return False
