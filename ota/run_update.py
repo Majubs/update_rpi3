@@ -56,12 +56,29 @@ def periodic_run(D, M, status):
 # 			sleep(2)
 			status.append(D.get_device_status())
 			D.send_message("Manifest correct")
-			if M.apply_manifest(D, status):
-				logging.debug("Update finished!")
+			#if M.apply_manifest(D, status):
+			#	logging.debug("Update finished!")
+			#	status.append(D.get_device_status())
+			#	D.send_message("Update done")
+            #   # send status before restart
+			#	D.send_device_status(status)
+			#	D.restart()
+            if M.download_verify_fw(D):
+                logging.debug("Firmware downloaded and verified!")
 				status.append(D.get_device_status())
-				D.send_message("Update done")
-				D.send_device_status(status)
-				D.restart()
+                D.send_message("Firmware correct")
+                if M.install_fw(D, status):
+                    logging.debug("Update finished!")
+				    status.append(D.get_device_status())
+				    D.send_message("Update done")
+                    # send status before restart
+				    D.send_device_status(status)
+				    D.restart()     
+            else:
+                D.send_exception("Update failed")
+                logging.debug("Download or installation failed")
+                # if update fails, also send status
+                D.send_device_status(status)
 		else:
 			D.send_exception("Manifest incorrect")
 			logging.debug("Manifest format is incorrect")

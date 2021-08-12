@@ -1,4 +1,3 @@
-# campos obrigatórios: version, squence_number, device, key_claims, digital_signature, checksum
 {
 	"version": "FW version_number",
 	"sequence_number": "UTC timestamp",

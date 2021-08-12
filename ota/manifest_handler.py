@@ -124,7 +124,8 @@ class Manifest:
 			self.valid = False
 			self._print_errors(check_errs)
 	
-	def apply_manifest(self, device, status):
+#	def apply_manifest(self, device, status):
+    def download_verify_fw(self, device):
 		logging.debug("Applying manifest!")
 		#update FW
 		# print(self.m_parsed)
@@ -147,11 +148,14 @@ class Manifest:
 		if device.check_checksum(self.m_parsed['checksum'], md5sum):
 			device.send_message("Checksum OK")
 			logging.debug("Checksum correct!")
+            return True
 		else:
 			device.send_exception("Checksum did not match")
 			logging.debug("Checksum incorrect!")
 			return False
 		
+
+    def install_fw(self, device, status)
 		#do processing stuff (if needed)
 		alg = 'zip'
 		if 'processing_steps' in self.m_parsed:
