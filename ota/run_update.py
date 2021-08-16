@@ -75,10 +75,10 @@ def periodic_run(D, M, status):
 					D.send_device_status(status)
 					D.restart()
 			else:
-			    D.send_exception("Update failed")
-			    logging.debug("Download or installation failed")
-			    # if update fails, also send status
-			    D.send_device_status(status)
+				D.send_exception("Update failed")
+				logging.debug("Download or installation failed")
+				# if update fails, also send status
+				D.send_device_status(status)
 		else:
 			D.send_exception("Manifest incorrect")
 			logging.debug("Manifest format is incorrect")

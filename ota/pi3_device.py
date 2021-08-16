@@ -17,7 +17,7 @@ class Device:
 				content = json.loads(f.read())
 			print("Device information: ")
 			print(json.dumps(content, indent=4))
-                
+				
 			if content.get("version"):
 				self.version = content["version"]
 			else:
