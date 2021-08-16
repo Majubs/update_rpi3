@@ -32,6 +32,7 @@ class Manifest:
 		self.valid = True
 		self.user = user
 		self.passwd = passwd
+		self.new_fw = ''
 		
 	def _print_errors(self, err_filter):
 		# print("Errors parsing manifest:", err_filter)
@@ -125,12 +126,12 @@ class Manifest:
 			self._print_errors(check_errs)
 	
 #	def apply_manifest(self, device, status):
-    def download_verify_fw(self, device):
+	def download_verify_fw(self, device):
 		logging.debug("Applying manifest!")
 		#update FW
 		# print(self.m_parsed)
-		new_fw = device.download_firmware()
-		if new_fw == '':
+		self.new_fw = device.download_firmware()
+		if self.new_fw == '':
 			device.send_exception("Firmware not found")
 			logging.debug("Did not receive firmware")
 			return False
@@ -143,19 +144,19 @@ class Manifest:
 # 				print("Failed to save new FW to memory")
 # 				return False
 		
-		md5sum = hashlib.md5(bytes(new_fw)).hexdigest()
+		md5sum = hashlib.md5(bytes(self.new_fw)).hexdigest()
 		logging.debug("Received file checksum >>> ", md5sum)
 		if device.check_checksum(self.m_parsed['checksum'], md5sum):
 			device.send_message("Checksum OK")
 			logging.debug("Checksum correct!")
-            return True
+			return True
 		else:
 			device.send_exception("Checksum did not match")
 			logging.debug("Checksum incorrect!")
 			return False
 		
 
-    def install_fw(self, device, status)
+	def install_fw(self, device, status):
 		#do processing stuff (if needed)
 		alg = 'zip'
 		if 'processing_steps' in self.m_parsed:
@@ -168,8 +169,8 @@ class Manifest:
 				if not device.run_cmd_install(p_steps['run']):
 					return False
 
-		#write new FW to device					
-		new_fw_fname = device.write_file(new_fw, self.m_json.get('version'), alg)
+		#write new FW to device
+		new_fw_fname = device.write_file(self.new_fw, self.m_json.get('version'), alg)
 		
 		#substitute olf FW with new
 		logging.debug("Applying new firmware")

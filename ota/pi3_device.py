@@ -404,20 +404,20 @@ class Device:
 		logging.debug("[DEV] Exception: %s", exception)
 		
 	def send_device_status(self, status_list):
-        if len(status_list) > 0:
-            logging.debug("[DEV] Sending status colllected during execution")
-            send_data = {}
-            data_idx = 0
-		    
-		    for s in status_list:
-			    data = json.dumps(s)
-                send_data[str(data_idx)] = data
-                data_idx = data_idx + 1
+		if len(status_list) > 0:
+			logging.debug("[DEV] Sending status colllected during execution")
+			send_data = {}
+			data_idx = 0
 
-		    try:
-			    requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
-		    except:
-			    logging.debug("[DEV] Status not sent")
-			    # print("[DEV] Sending: ", s)
-			    
-		    logging.debug("[DEV] Done sending")
+			for s in status_list:
+				data = json.dumps(s)
+				send_data[str(data_idx)] = data
+				data_idx = data_idx + 1
+
+			try:
+				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+			except:
+				logging.debug("[DEV] Status not sent")
+				# print("[DEV] Sending: ", s)
+
+			logging.debug("[DEV] Done sending")
