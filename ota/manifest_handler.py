@@ -45,7 +45,7 @@ class Manifest:
 		try:
 			r = requests.get('http://data.prod.konkerlabs.net/sub/' + self.user + '/_update', auth=(self.user, self.passwd))
 		except Exception as e:
-			logging.error(e)
+			logging.error("Connection lost: ", e)
 			return 0
 		#get manifest from addr
 		logging.debug("Status: %d %s", r.status_code, r.reason)
@@ -146,7 +146,8 @@ class Manifest:
 # 				return False
 		
 		md5sum = hashlib.md5(bytes(self.new_fw)).hexdigest()
-		logging.debug("Received file checksum >>> ", md5sum)
+		logging.debug("Received file checksum >>> ", str(md5sum))
+
 		if device.check_checksum(self.m_parsed['checksum'], md5sum):
 			device.send_message("Checksum OK")
 			logging.debug("Checksum correct!")
@@ -176,7 +177,8 @@ class Manifest:
 		#substitute old FW with new
 		logging.debug("Applying new firmware")
 		status.append(device.get_device_status())
-		device.apply_firmware(new_fw_fname, (self.m_json.get("version"), self.m_json.get("sequence_number"), self.m_json.get("size"), self.m_json.get("expiration_date"), self.m_json.get("author"), self.m_json.get("digital_signature"), self.m_json.get("key_claims"), self.m_json.get("checksum")))
+		if not device.apply_firmware(new_fw_fname, (self.m_json.get("version"), self.m_json.get("sequence_number"), self.m_json.get("size"), self.m_json.get("digital_signature"), self.m_json.get("key_claims"), self.m_json.get("checksum"))):
+			return False
 
 		# after update (if needed)
 		if 'additional_steps' in self.m_parsed:

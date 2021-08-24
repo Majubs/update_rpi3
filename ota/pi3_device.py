@@ -6,7 +6,7 @@ Created on Thu Apr 30 18:50:59 2020
 @author: majubs
 """
 import json, requests, os, platform, subprocess, psutil, socket, logging
-from zipfile import ZipFile
+from zipfile import ZipFile, is_zipfile
 from time import time
 
 class Device:
@@ -15,9 +15,9 @@ class Device:
 		try:
 			with open(fw_info_file, 'r') as f:
 				content = json.loads(f.read())
-			print("Device information: ")
-			print(json.dumps(content, indent=4))
-				
+			logging.debug("Device information: ")
+			logging.debug(json.dumps(content, indent=4))
+
 			if content.get("version"):
 				self.version = content["version"]
 			else:
@@ -72,27 +72,34 @@ class Device:
 	def _backup_fw(self, dirs=''):
 		if dirs:
 			self.directory_list = dirs
-		
+
 		out_file = "fw_" + self.version + ".zip"
-		try:
-			zip_obj = ZipFile(out_file, 'w')
-		
-			logging.debug("[DEV] Backing up current FW, version ", self.version)
+		if not os.path.isfile(out_file):
+			try:
+				zip_obj = ZipFile(out_file, 'w')
 			
-			os.chdir('../')
-			for d in self.directory_list:
-				for folderName, subfolders, filenames in os.walk(d):
-					for filename in filenames:
-						print("[DEV] Adding file: ", folderName + '/' + filename)
-						filePath = os.path.join(folderName, filename)
-						zip_obj.write(filePath)
-			os.chdir('ota/')
-			zip_obj.write(self.fw_info_file)
-			zip_obj.close()
-		except:
-			logging.debug("[DEV] It was not possible to create a backup")
-		
-# 		os.rename(out_file, 'ota/' + out_file)
+				logging.debug("[DEV] Backing up current FW, version ", self.version)
+				
+				os.chdir('../')
+				for d in self.directory_list:
+					for folderName, subfolders, filenames in os.walk(d):
+						for filename in filenames:
+							logging.debug("[DEV] Adding file: ", folderName + '/' + filename)
+							filePath = os.path.join(folderName, filename)
+							zip_obj.write(filePath)
+				os.chdir('ota/')
+				zip_obj.write(self.fw_info_file)
+				zip_obj.close()
+			except:
+				logging.debug("[DEV] It was not possible to create a backup")
+			
+			# remove old backup
+			if os.path.isfile(self.backup_file):
+				os.remove(self.backup_file)
+			
+		else:
+			logging.debug("[DEV] Backup already exists")
+			
 		self.backup_file = out_file
 		
 	#update FW information file with new FW information
@@ -103,8 +110,8 @@ class Device:
 		content["version"] = new_info[0]
 		content["sequence_number"] = new_info[1]
 		content["size"] = new_info[2]
-		content["expiration_date"] = new_info[3]
-		content["author"] = new_info[4]
+		# content["expiration_date"] = new_info[3]
+		# content["author"] = new_info[4]
 		content["digital_signature"] = new_info[5]
 		content["key_claims"] = new_info[6]
 		content["checksum"] = new_info[7]
@@ -212,14 +219,23 @@ class Device:
 		# self._backup_fw()
 		
 		#decompress new FW
-		with ZipFile(new_fw, 'r') as zip_obj:
-			zip_list = zip_obj.namelist()
-			if 'fw_info.json' in zip_list:
-				zip_obj.extract('fw_info.json')
-				zip_list.remove('fw_info.json')
-			zip_obj.extractall('../app/', zip_list)
-		
-		self._update_fw_info(fw_info)
+		if is_zipfile(new_fw):
+			try:
+				with ZipFile(new_fw, 'r') as zip_obj:
+					zip_list = zip_obj.namelist()
+					if 'fw_info.json' in zip_list:
+						zip_obj.extract('fw_info.json')
+						zip_list.remove('fw_info.json')
+					zip_obj.extractall('../app/', zip_list)
+			except:
+				logging.debug("[DEV] It was not possible to extract new FW")
+				return False
+
+			self._update_fw_info(fw_info)
+
+			return True
+
+		return False
 
 	def run_cmd_install(self, cmd):
 		if cmd:
@@ -308,11 +324,14 @@ class Device:
 			if idx_start >= 0:
 				idx_end = idx_start + o[idx_start:].find("\\n")
 				l = o[idx_start:idx_end]
-				q = l.split()[1]
-				s = l.split()[3]
-				quality = q.split('=')[1].split('/')[0]
-				strength = s.split('=')[1]
-
+				for w in l.split():
+					if "Quality" in w:
+						quality = w.split('=')[1].split('/')[0]
+					if "level" in w:
+						strength = w.split('=')[1]
+				# q = l.split()[1]
+				# s = l.split()[4]
+				
 		return quality, strength
 
 	# return a dict with ping and nmap info
