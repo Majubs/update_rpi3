@@ -1,6 +1,7 @@
 ota/config.json
 ota/**.zip
 create_update/token.txt
+ota/**.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

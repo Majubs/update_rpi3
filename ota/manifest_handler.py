@@ -44,7 +44,8 @@ class Manifest:
 		logging.debug("Retrieving manifest from Konker Platform")
 		try:
 			r = requests.get('http://data.prod.konkerlabs.net/sub/' + self.user + '/_update', auth=(self.user, self.passwd))
-		except:
+		except Exception as e:
+			logging.error(e)
 			return 0
 		#get manifest from addr
 		logging.debug("Status: %d %s", r.status_code, r.reason)
@@ -172,7 +173,7 @@ class Manifest:
 		#write new FW to device
 		new_fw_fname = device.write_file(self.new_fw, self.m_json.get('version'), alg)
 		
-		#substitute olf FW with new
+		#substitute old FW with new
 		logging.debug("Applying new firmware")
 		status.append(device.get_device_status())
 		device.apply_firmware(new_fw_fname, (self.m_json.get("version"), self.m_json.get("sequence_number"), self.m_json.get("size"), self.m_json.get("expiration_date"), self.m_json.get("author"), self.m_json.get("digital_signature"), self.m_json.get("key_claims"), self.m_json.get("checksum")))

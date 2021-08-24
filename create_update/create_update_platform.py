@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-import requests, json, hashlib, os, sys
+import requests, json, hashlib, os, sys, time
 import connect_platform as platform
+import paho.mqtt.publish as publish
 
 class Firmware:
 	def __init__(self, file, md5_file, version):
@@ -23,6 +24,22 @@ class Firmware:
 		else:
 			md5sum = hashlib.md5(f.read()).hexdigest()
 		return f, md5sum
+	
+	def _get_checksum(self):
+		if(os.path.isfile(self.md5_file)):
+			md5file = open(self.md5_file, 'r')
+			md5sum = md5file.read().split()[0]
+			md5file.close()
+		else:
+			f = open(self.file, 'rb')
+			md5sum = hashlib.md5(f.read()).hexdigest()
+			content = "{} {}".format(md5sum, self.file.split('/')[-1])
+			with open(self.md5_file, 'w') as md5file:
+				md5file.write(content)
+			f.close()
+			
+		print("MD5SUM = ", md5sum)
+		return md5sum
 
 ################################# End of class Firmware ############################################
 
@@ -122,23 +139,44 @@ def create_updates(plat, devices):
 	
 	return ok
 
+def create_manifests(plat, devices_list):
+		man = {"sequence_number": str(int(time.time() * 1000)), "key_claims": "something", "digital_signature": "1234567890alongstringhgeresignature0"} #, "required_version_list": ["1.0.10", "1.0.0", "0.0.0"]}
+		
+		for d in devices_list:
+			man_d = man
+			man_d["version"] = d.version
+			man_d["size"] = os.path.getsize(d.file)
+			man_d["device"] = d.dev_id
+			man_d["checksum"] = d._get_checksum()
+			
+			channel = "data/{}/pub/_in".format("svh462pj3v19")
+			device_auth = {"username": "svh462pj3v19", "password": "saxgjM4CmqVz"}
+			
+			print("Sending device manifest to: ", channel)
+			print(man_d)
+			
+			publish.single(channel, payload=json.dumps(man_d), hostname="mqtt.prod.konkerlabs.net", port=1883, auth=device_auth)
+
 def main(argv):
-	p = platform.Platform(user = "mjuliabs@gmail.com", pwd = "123456", api="http://192.168.0.123:8081/v1")
+	p = platform.Platform(user = "mjuliabs@gmail.com", pwd = "xaengu5Ukonker", api="https://api.prod.konkerlabs.net:443/v1")
+					   #api="http://192.168.0.123:8081/v1")
 	devices = []
-	dev_id = 'node02'
-	dev_guid = '194648e0-c554-4353-bc41-dc8a670c19b9'
-	dev_name = 'nodeMCU 02'
-	fwbin_file = 'C:/Users/majubs/Documents/Unicamp/Konker/libKonkerESP/.pio/build/nodemcuv2/firmware.bin'
-	md5_file = 'C:/Users/majubs/Documents/Unicamp/Konker/libKonkerESP/.pio/build/nodemcuv2/checksum.txt'
-	v = '1.0.6'
+	dev_id = 'rpi3'
+	dev_guid = 'f51b38a8-351d-448a-aa6d-549e1b66258a'
+	dev_name = 'Raspberry'
+	fwbin_file = '/home/majubs/Documents/Mestrado/update_rpi3/new_fw/new_app.zip'
+	md5_file = '/home/majubs/Documents/Mestrado/update_rpi3/new_fw/new_app.txt'
+	v = '1.0.9'
 	devices.append(Device(dev_name, dev_guid, dev_id, fwbin_file, md5_file, v))
 	
-	ok = create_updates(p, devices)
-	if ok:
-		print("Updates created.")
-	else:
-		print("It was not possible to create update for all devices!")
+# 	ok = create_updates(p, devices)
+# 	if ok:
+# 		print("Updates created.")
+# 	else:
+# 		print("It was not possible to create update for all devices!")
 #		return
+
+	create_manifests(p, devices)
 
 if __name__ == "__main__":
 	main(sys.argv)

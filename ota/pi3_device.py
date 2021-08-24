@@ -306,7 +306,7 @@ class Device:
 			o = str(r.stdout)
 			idx_start = o.find("Link")
 			if idx_start >= 0:
-				idx_end = o[idx_start:].find("\\n")
+				idx_end = idx_start + o[idx_start:].find("\\n")
 				l = o[idx_start:idx_end]
 				q = l.split()[1]
 				s = l.split()[4]
