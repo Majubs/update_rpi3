@@ -309,7 +309,7 @@ class Device:
 				idx_end = idx_start + o[idx_start:].find("\\n")
 				l = o[idx_start:idx_end]
 				q = l.split()[1]
-				s = l.split()[4]
+				s = l.split()[3]
 				quality = q.split('=')[1].split('/')[0]
 				strength = s.split('=')[1]
 
@@ -390,7 +390,7 @@ class Device:
 	def send_message(self, msg):
 		data = json.dumps({"update stage":msg})
 		try:
-			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_in', auth=(self.user, self.passwd), data=data)
 		except:
 			logging.debug("[DEV] Message not sent")
 		logging.debug("[DEV] Sending: %s", msg)
@@ -398,7 +398,7 @@ class Device:
 	def send_exception(self, exception):
 		data = json.dumps({"update exception":exception})
 		try:
-			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+			requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_in', auth=(self.user, self.passwd), data=data)
 		except:
 			logging.debug("[DEV] Message not sent")
 		logging.debug("[DEV] Exception: %s", exception)
@@ -415,7 +415,7 @@ class Device:
 				data_idx = data_idx + 1
 
 			try:
-				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_in', auth=(self.user, self.passwd), data=data)
 			except:
 				logging.debug("[DEV] Status not sent")
 				# print("[DEV] Sending: ", s)

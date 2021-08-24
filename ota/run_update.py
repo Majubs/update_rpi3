@@ -95,7 +95,7 @@ def periodic_run(D, M, status):
 # 		t.start()
 
 def main(argv):
-	logging.basicConfig(level=logging.INFO)
+	logging.basicConfig(level=logging.DEBUG)
 	logging.debug("Starting update check")
 	configuration = read_last_conf()
 	if configuration == '':
