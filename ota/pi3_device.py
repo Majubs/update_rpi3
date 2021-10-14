@@ -430,6 +430,7 @@ class Device:
 				send_data[str(data_idx)] = data
 				data_idx = data_idx + 1
 
+			# send all information at once
 			try:
 				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
 			except:

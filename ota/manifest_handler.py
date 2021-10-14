@@ -45,8 +45,8 @@ class Manifest:
 		try:
 			r = requests.get('http://data.prod.konkerlabs.net/sub/' + self.user + '/_update', auth=(self.user, self.passwd))
 		except Exception as e:
-			logging.error("Connection lost: ", e)
-			return 0
+			logging.error("Connection lost: ", str(e))
+			return 2
 		#get manifest from addr
 		logging.debug("Status: %d %s", r.status_code, r.reason)
 		
