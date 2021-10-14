@@ -48,7 +48,6 @@ class Device:
 			content["expiration_date"] = None
 			content["author"] = "Konker"
 			content["digital_signature"] = None
-			content["key_claims"] = None
 			content["checksum"] = None
 			content["backup"] = self.backup_file
 
@@ -107,14 +106,12 @@ class Device:
 		with open(self.fw_info_file, 'r') as f:
 			content = json.loads(f.read())
 			
-		content["version"] = new_info[0]
-		content["sequence_number"] = new_info[1]
-		content["size"] = new_info[2]
-		# content["expiration_date"] = new_info[3]
-		# content["author"] = new_info[4]
-		content["digital_signature"] = new_info[5]
-		content["key_claims"] = new_info[6]
-		content["checksum"] = new_info[7]
+		content.update(new_info)
+# 		content["version"] = new_info["version"]
+# 		content["sequence_number"] = new_info["sequence_number"]
+# 		content["size"] = new_info["size"]
+# 		content["digital_signature"] = new_info["digital_signature"]
+# 		content["checksum"] = new_info["checksum"]
 		content["backup"] = "fw_" + self.version + ".zip"
 
 		with open(self.fw_info_file, 'w') as f:
@@ -168,7 +165,7 @@ class Device:
 		
 		return flag
 	
-	def check_signature(self, signature, key_claims):
+	def check_signature(self, signature):
 		return True
 	
 	def check_vendor(self, vendor_id):

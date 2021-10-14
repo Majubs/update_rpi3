@@ -27,7 +27,7 @@ class Manifest:
 	def __init__(self,user,passwd):
 		self.m_json = {}
 		self.m_parsed = {}
-		self.required_elements = ["version", "device", "sequence_number", "key_claims", "digital_signature", "checksum"]
+		self.required_elements = ["version", "device", "sequence_number", "digital_signature", "checksum"]
 		self.optional_elements = ["fw_url","vendor_id", "size", "required_version", "required_version_list", "dependencies", "author", "firmware", "payload_format", "processing_steps", "additional_steps", "encryption_wrapper"]
 		self.valid = True
 		self.user = user
@@ -86,7 +86,7 @@ class Manifest:
 				elif field == "sequence_number":
 					check_errs.append(not device.check_sequence_number(self.m_json.get(field)))
 				elif field == "digital_signature":
-					check_errs.append(not device.check_signature(self.m_json.get(field), self.m_json.get("key_claims")))
+					check_errs.append(not device.check_signature(self.m_json.get(field)))
 				else: #will be used later
 					check_errs.append(False)
 					self.m_parsed[field] = self.m_json.get(field)
@@ -177,7 +177,10 @@ class Manifest:
 		#substitute old FW with new
 		logging.debug("Applying new firmware")
 		status.append(device.get_device_status())
-		if not device.apply_firmware(new_fw_fname, (self.m_json.get("version"), self.m_json.get("sequence_number"), self.m_json.get("size"), self.m_json.get("digital_signature"), self.m_json.get("key_claims"), self.m_json.get("checksum"))):
+		fw_info = dict(zip(["version", "sequence_number", "digital_signature", "checksum"], 
+					 self.m_json.get("version"), self.m_json.get("sequence_number"), 
+					 self.m_json.get("digital_signature"), self.m_json.get("checksum")))
+		if not device.apply_firmware(new_fw_fname, fw_info):
 			return False
 
 		# after update (if needed)
