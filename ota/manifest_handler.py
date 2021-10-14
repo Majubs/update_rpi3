@@ -56,7 +56,7 @@ class Manifest:
 				return 2
 			json_temp = r.json()[0]['data']
 
-			if ("update stage" in json_temp) or ("update exception" in json_temp):
+			if ("update stage" in json_temp) or ("update exception" in json_temp) or ("0" in json_temp):
 				return 2
 
 			self.m_json = json_temp

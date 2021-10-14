@@ -426,13 +426,14 @@ class Device:
 			data_idx = 0
 
 			for s in status_list:
-				data = json.dumps(s)
+				data = s
 				send_data[str(data_idx)] = data
 				data_idx = data_idx + 1
 
 			# send all information at once
 			try:
-				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', auth=(self.user, self.passwd), data=data)
+				requests.post('http://data.prod.konkerlabs.net/pub/' + self.user + '/_update_in', 
+								auth=(self.user, self.passwd), data=json.dumps(send_data))
 			except:
 				logging.debug("[DEV] Status not sent")
 				# print("[DEV] Sending: ", s)
