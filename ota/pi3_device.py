@@ -125,8 +125,8 @@ class Device:
 	def _compare_versions(self, ver1, ver2):
 		# print('Version NEW: '+ str(ver1))
 		# print('Version OLD: '+ str(ver2))
-		v1 = ver1.split('.')
-		v2 = ver2.split('.')
+		v1 = list(map(int, ver1.split('.')))
+		v2 = list(map(int, ver2.split('.')))
 		if v1[0] > v2[0]:
 			return True
 		if v1[0] == v2[0]:
