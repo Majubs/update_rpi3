@@ -137,7 +137,7 @@ class Manifest:
 			logging.debug("Did not receive firmware")
 			return False
 		else:
-			device.send_message("Firmware received correctly")
+			device.send_message("Firmware received")
 # 		else:
 # 			try:
 # 				open('temp_fw.zip', 'wb').write(new_fw)
@@ -178,8 +178,8 @@ class Manifest:
 		logging.debug("Applying new firmware")
 		status.append(device.get_device_status())
 		fw_info = dict(zip(["version", "sequence_number", "digital_signature", "checksum"], 
-					 self.m_json.get("version"), self.m_json.get("sequence_number"), 
-					 self.m_json.get("digital_signature"), self.m_json.get("checksum")))
+					 [self.m_json.get("version"), self.m_json.get("sequence_number"), 
+					 self.m_json.get("digital_signature"), self.m_json.get("checksum")]))
 		if not device.apply_firmware(new_fw_fname, fw_info):
 			return False
 

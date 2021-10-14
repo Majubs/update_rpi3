@@ -66,7 +66,7 @@ def periodic_run(D, M, status):
 			if M.download_verify_fw(D):
 				logging.debug("Firmware downloaded and verified!")
 				status.append(D.get_device_status())
-				D.send_message("Firmware correct")
+# 				D.send_message("Firmware correct")
 				if M.install_fw(D, status):
 					logging.debug("Update finished!")
 					status.append(D.get_device_status())
