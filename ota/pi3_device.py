@@ -77,13 +77,13 @@ class Device:
 			try:
 				zip_obj = ZipFile(out_file, 'w')
 			
-				logging.debug("[DEV] Backing up current FW, version ", self.version)
+				logging.debug("[DEV] Backing up current FW, version %s", self.version)
 				
 				os.chdir('../')
 				for d in self.directory_list:
 					for folderName, subfolders, filenames in os.walk(d):
 						for filename in filenames:
-							logging.debug("[DEV] Adding file: ", folderName + '/' + filename)
+							logging.debug("[DEV] Adding file: %s", folderName + '/' + filename)
 							filePath = os.path.join(folderName, filename)
 							zip_obj.write(filePath)
 				os.chdir('ota/')
@@ -190,7 +190,7 @@ class Device:
 			r = requests.get('https://data.prod.konkerlabs.net/firmware/' + self.user + '/binary', auth=(self.user, self.passwd))
 		except:
 			return ''
-		logging.debug("[DEV] Status: ", r.status_code, r.reason)
+		logging.debug("[DEV] Status[%d]: %s", r.status_code, r.reason)
 		
 		if r.status_code == 200:
 			# if it's a FW, the Content-type is application/octet-stream
@@ -210,8 +210,8 @@ class Device:
 	
 	#backup old FW and extract new one
 	def apply_firmware(self, new_fw, fw_info, steps=None):
-		if steps:
-			logging.debug("-> ", steps)
+# 		if steps:
+# 			logging.debug("-> ", steps)
 			
 		# self._backup_fw()
 		

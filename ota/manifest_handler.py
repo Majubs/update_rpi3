@@ -146,7 +146,7 @@ class Manifest:
 # 				return False
 		
 		md5sum = hashlib.md5(bytes(self.new_fw)).hexdigest()
-		logging.debug("Received file checksum >>> ", str(md5sum))
+		logging.debug("Received file checksum >>> %s", str(md5sum))
 
 		if device.check_checksum(self.m_parsed['checksum'], md5sum):
 			device.send_message("Checksum OK")
@@ -162,7 +162,7 @@ class Manifest:
 		#do processing stuff (if needed)
 		alg = 'zip'
 		if 'processing_steps' in self.m_parsed:
-			logging.debug("Doing processing steps: ", self.m_parsed['processing_steps'][0])
+			logging.debug("Doing processing steps: %s", self.m_parsed['processing_steps'][0])
 			p_steps = self.m_parsed['processing_steps'][0]
 			if p_steps.get('decode_algorithm'):
 				alg = p_steps['decode_algorithm']
@@ -185,6 +185,6 @@ class Manifest:
 
 		# after update (if needed)
 		if 'additional_steps' in self.m_parsed:
-			logging.debug("Doing addtional steps: ", self.m_parsed['additional_steps'][0])
+			logging.debug("Doing addtional steps: %s", self.m_parsed['additional_steps'][0])
 
 		return True

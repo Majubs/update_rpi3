@@ -32,7 +32,7 @@ def periodic_run(D, M, status):
 	if D.check_first_start():
 		logging.debug("Starting a new FW")
 		if D.check_start():
-			logging.debug("New version: ", D.version)
+			logging.debug("New version: %s", D.version)
 			D.send_device_status([D.get_device_status()])
 			D.send_message("Update correct")
 		else:
